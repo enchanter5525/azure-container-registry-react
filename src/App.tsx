@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
 
@@ -42,7 +42,22 @@ function App() {
   const [username, setUsername] = useState('testuser')
   const [password, setPassword] = useState('testpass')
   const [question, setQuestion] = useState('')
-  const [session, setSession] = useState<LoginResponse | null>(null)
+  const [session, setSession] = useState<LoginResponse | null>(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    if (!saved) {
+      return null
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as LoginResponse
+      if (parsed.access_token) {
+        return parsed
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY)
+    }
+    return null
+  })
   const [records, setRecords] = useState<QnARecord[]>([])
   const [health, setHealth] = useState<HealthState>({ auth: 'Checking', qna: 'Checking' })
   const [isLoggingIn, setIsLoggingIn] = useState(false)
@@ -50,22 +65,6 @@ function App() {
   const [isLoadingRecords, setIsLoadingRecords] = useState(false)
   const [authError, setAuthError] = useState('')
   const [workspaceError, setWorkspaceError] = useState('')
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (!saved) {
-      return
-    }
-
-    try {
-      const parsed = JSON.parse(saved) as LoginResponse
-      if (parsed.access_token) {
-        setSession(parsed)
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY)
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -107,18 +106,7 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!session) {
-      setRecords([])
-      window.localStorage.removeItem(STORAGE_KEY)
-      return
-    }
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-    void loadRecords(session.access_token)
-  }, [session])
-
-  async function loadRecords(token: string) {
+  const loadRecords = useCallback(async (token: string) => {
     setIsLoadingRecords(true)
     setWorkspaceError('')
 
@@ -148,7 +136,29 @@ function App() {
     } finally {
       setIsLoadingRecords(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!session) {
+      window.localStorage.removeItem(STORAGE_KEY)
+      return
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+
+    let cancelled = false
+
+    const fetchAndLoad = async () => {
+      if (cancelled) return
+      await loadRecords(session.access_token)
+    }
+
+    void fetchAndLoad()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session, loadRecords])
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -223,6 +233,7 @@ function App() {
 
   function handleLogout() {
     setSession(null)
+    setRecords([])
     setQuestion('')
     setWorkspaceError('')
     setAuthError('')
