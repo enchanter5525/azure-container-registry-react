@@ -71,6 +71,11 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Register Container Instance Provider
+      run: |
+        az provider register --namespace Microsoft.ContainerInstance
+        az provider wait --registered --namespace Microsoft.ContainerInstance
+
     - name: Deploy to Dev
       run: |
         az container create \
@@ -99,6 +104,11 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Register Container Instance Provider
+      run: |
+        az provider register --namespace Microsoft.ContainerInstance
+        az provider wait --registered --namespace Microsoft.ContainerInstance
 
     - name: Deploy to Production
       run: |
