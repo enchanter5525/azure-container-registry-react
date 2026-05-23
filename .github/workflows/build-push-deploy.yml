@@ -63,7 +63,7 @@ jobs:
   deploy-dev:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     
     steps:
     - name: Azure Login
@@ -72,16 +72,22 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy to Dev
-      uses: azure/container-instances-deploy-action@v1
-      if: github.ref == 'refs/heads/develop'
-      with:
-        resource-group: my-developers
-        name: my-react-app-dev
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop
-        registry-username: ${{ secrets.ACR_USERNAME }}
-        registry-password: ${{ secrets.ACR_PASSWORD }}
-        environment-variables: REACT_APP_API_URL=https://api-dev.example.com
-        ports: 80
+      run: |
+        az container create \
+          --resource-group my-developers \
+          --name my-react-app-dev \
+          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop \
+          --registry-login-server ${{ env.REGISTRY }} \
+          --registry-username ${{ secrets.ACR_USERNAME }} \
+          --registry-password ${{ secrets.ACR_PASSWORD }} \
+          --environment-variables REACT_APP_API_URL=https://api-dev.example.com \
+          --ports 80 \
+          --cpu 1 \
+          --memory 1 \
+          --no-wait
+        
+        echo "Dev container instance created/updated"
+        echo "IP Address: $(az container show --resource-group my-developers --name my-react-app-dev --query ipAddress.ip -o tsv)"
 
   deploy-prod:
     needs: build-and-push
@@ -95,12 +101,19 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy to Production
-      uses: azure/container-instances-deploy-action@v1
-      with:
-        resource-group: my-developers
-        name: my-react-app-prod
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
-        registry-username: ${{ secrets.ACR_USERNAME }}
-        registry-password: ${{ secrets.ACR_PASSWORD }}
-        environment-variables: REACT_APP_API_URL=https://api.example.com
-        ports: 80
+      run: |
+        az container create \
+          --resource-group my-developers \
+          --name my-react-app-prod \
+          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master \
+          --registry-login-server ${{ env.REGISTRY }} \
+          --registry-username ${{ secrets.ACR_USERNAME }} \
+          --registry-password ${{ secrets.ACR_PASSWORD }} \
+          --environment-variables REACT_APP_API_URL=https://api.example.com \
+          --ports 80 \
+          --cpu 1 \
+          --memory 1 \
+          --no-wait
+        
+        echo "Production container instance created/updated"
+        echo "IP Address: $(az container show --resource-group my-developers --name my-react-app-prod --query ipAddress.ip -o tsv)"
