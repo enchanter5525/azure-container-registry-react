@@ -74,7 +74,17 @@ jobs:
     - name: Register Container Instance Provider
       run: |
         az provider register --namespace Microsoft.ContainerInstance
-        az provider wait --registered --namespace Microsoft.ContainerInstance
+        echo "Waiting for provider registration..."
+        for i in {1..30}; do
+          STATUS=$(az provider show -n Microsoft.ContainerInstance --query registrationState -o tsv)
+          echo "Registration status: $STATUS"
+          if [ "$STATUS" = "Registered" ]; then
+            echo "Provider registered successfully!"
+            break
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 5
+        done
 
     - name: Deploy to Dev
       run: |
@@ -108,7 +118,17 @@ jobs:
     - name: Register Container Instance Provider
       run: |
         az provider register --namespace Microsoft.ContainerInstance
-        az provider wait --registered --namespace Microsoft.ContainerInstance
+        echo "Waiting for provider registration..."
+        for i in {1..30}; do
+          STATUS=$(az provider show -n Microsoft.ContainerInstance --query registrationState -o tsv)
+          echo "Registration status: $STATUS"
+          if [ "$STATUS" = "Registered" ]; then
+            echo "Provider registered successfully!"
+            break
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 5
+        done
 
     - name: Deploy to Production
       run: |
