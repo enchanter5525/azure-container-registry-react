@@ -97,6 +97,7 @@ jobs:
           --registry-password ${{ secrets.ACR_PASSWORD }} \
           --environment-variables REACT_APP_API_URL=https://api-dev.example.com \
           --ports 80 \
+          --os-type Linux \
           --cpu 1 \
           --memory 1 \
           --no-wait
@@ -141,6 +142,7 @@ jobs:
           --registry-password ${{ secrets.ACR_PASSWORD }} \
           --environment-variables REACT_APP_API_URL=https://api.example.com \
           --ports 80 \
+          --os-type Linux \
           --cpu 1 \
           --memory 1 \
           --no-wait
