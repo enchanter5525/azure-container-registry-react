@@ -51,7 +51,6 @@ jobs:
           type=ref,event=branch
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ github.run_id }}
           type=raw,value=${{ steps.timestamp.outputs.date }}-${{ github.run_id }}
